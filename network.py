@@ -82,6 +82,9 @@ def addr2net(address, bits=0):
 
     INET6 addresses may be enclosed in square brackets, a common notation to
     differentiate them from other data types.
+
+    While they're a legal notation, RFC 4291 IPv4-mapped IPv6 addresses are
+    not yet supported (e.g. ::ffff:192.0.2.1).
     """
 
     address_out = []
