@@ -61,9 +61,11 @@ class TestNetworkMethods(unittest.TestCase):
 
     def test_addr2net_mixed(self):
         assert addr2net(['192.0.2.190/28',
+                         '192.0.2.10',
                          '[2001:DB8:DEAD:BEEF::1]/48',
                          '2001:DB8:BAD:DAD::9/64',
                          '192.0.2.250/29']) == ['192.0.2.176/28',
+                                                '192.0.2.10',
                                                 '[2001:db8:dead::0]/48',
                                                 '2001:db8:bad:dad::0/64',
                                                 '192.0.2.248/29'
