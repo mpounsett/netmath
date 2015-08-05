@@ -3,14 +3,6 @@ from network import addr2int, int2addr, addr2net
 
 
 class TestNetworkMethods(unittest.TestCase):
-    def __init__(self, *args):
-        super(TestNetworkMethods, self).__init__(*args)
-        self.v4_addr = '192.0.2.190'
-        self.v4_int = 3221226174
-        self.v4_mask = 28
-        self.v6_addr = '2001:DB8:DEAD:BEEF::1'
-        self.v6_int = 42540766480198310862439499904952827905L
-        self.v6_mask = 48
 
     def test_addr2int_v4(self):
         assert addr2int('192.0.2.190') == 3221226174
@@ -69,10 +61,10 @@ class TestNetworkMethods(unittest.TestCase):
 
     def test_addr2net_mixed(self):
         assert addr2net(['192.0.2.190/28',
-                         '2001:DB8:DEAD:BEEF::1/48',
+                         '[2001:DB8:DEAD:BEEF::1]/48',
                          '2001:DB8:BAD:DAD::9/64',
                          '192.0.2.250/29']) == ['192.0.2.176/28',
-                                                '2001:db8:dead::0/48',
+                                                '[2001:db8:dead::0]/48',
                                                 '2001:db8:bad:dad::0/64',
                                                 '192.0.2.248/29'
                                                 ]
