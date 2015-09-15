@@ -68,20 +68,21 @@ def int2addr(address, family):
 
 def addr2net(address, bits=0):
     """
-    Address is either a string or a list of strings.  addr2net() will return
-    the same data type that is passed to it.
+    Address is either a string or a list of strings.  addr2net() will
+    return the same data type that is passed to it.
 
-    Each address can be either a bare address or an address in CIDR notation.
-    If an address is in CIDR notation then 'bits' is optional.  Where an
-    address is in CIDR notation and 'bits' is specified, the mask length on
-    the address will be preferred.
+    Each address can be either a bare address or an address in CIDR
+    notation.  If an address is in CIDR notation then 'bits' is optional.
+    Where an address is in CIDR notation and 'bits' is specified, the mask
+    length on the address will be preferred.
 
-    INET and INET6 families can be mixed in a list of addresses, however note
-    that only one 'bits' can be provided, so it's likely you will want to
-    specify addresses in CIDR notation in order to mix address families.
+    INET and INET6 families can be mixed in a list of addresses, however
+    note that only one 'bits' can be provided, so it's likely you will want
+    to specify addresses in CIDR notation in order to mix address
+    families.
 
-    INET6 addresses may be enclosed in square brackets, a common notation to
-    differentiate them from other data types.
+    INET6 addresses may be enclosed in square brackets, a common notation
+    to differentiate them from other data types.
 
     While they're a legal notation, RFC 4291 IPv4-mapped IPv6 addresses are
     not yet supported (e.g. ::ffff:192.0.2.1).
