@@ -3,47 +3,75 @@ import re
 
 def addr2int(address):
     if ":" in address:
+        family = 'INET6'
+        size = 128
         bits = 16
         base = 16
         separator = ":"
+
         # If the address starts with :: then split will break.  Prepend a
         # 0 to the string.
         if address.startswith("::"):
             address = '0' + address
         parts = address.split(separator)
+
+        # IPv4 embedded addresses have fewer octets in their text
+        # representation
+        segments = 8
+        if "." in parts[-1]:
+            segments = 7
+
         # Replace any :: with enough zeros to pad the address to 8 octets
         for i in range(len(parts)):
             if parts[i] == '':
                 parts[i] = '0'
-                for x in range(8 - len(parts)):
+                for x in range(segments - len(parts)):
                     parts.insert(i, '0')
+
         # fill any empty fields still remaining with zeros.
         for i in range(len(parts)):
             if parts[i] == '':
                 parts[i] = '0'
+
         # put it back together so our generic code can deal with the
         # expanded shortcuts
         address = separator.join(parts)
+
     else:
+        family = 'INET'
+        size = 32
         bits = 8
         base = 10
         separator = '.'
 
     parts = address.split(separator)
-    parts.reverse()
     address = 0
     for i in range(len(parts)):
-        part = int(parts[i], base) << (bits * i)
+        if (family == 'INET6' and '.' in parts[i] and address >> 48 == 0):
+            part = addr2int(parts[i])
+        else:
+            part = int(parts[i], base) << (bits * (size / bits - i - 1))
+
         address += part
     return address
 
 
 def int2addr(address, family):
+    # mapped = embedded = False
+    embedded = False
     if family.upper() == 'INET6':
         bit = "{:x}"
         bits = 16
         size = 128
         separator = ":"
+
+        # Check if this is a v4/v6 embedded or mapped address
+        # No use for specially handling mapped addresses (yet)
+        # if (address >> 32 == 0):
+        #     mapped = True
+        if (address >> 48 == 0):
+            embedded = True
+
     elif family.upper() == 'INET':
         bit = "{:d}"
         bits = 8
@@ -55,9 +83,12 @@ def int2addr(address, family):
     parts = []
     mask = (2 ** bits) - 1
     while size > 0:
-        parts.insert(0, bit.format(address & mask))
-        address = address >> bits
-        size -= bits
+        if (embedded and size == 32):
+            parts.append(int2addr(address & ((2 ** 32) - 1), "INET"))
+            size -= 32
+        else:
+            parts.append(bit.format((address >> (size - bits)) & mask))
+            size -= bits
     addr = separator.join(parts)
 
     if family.upper() == 'INET6':
@@ -130,3 +161,20 @@ def addr2net(address, bits=0):
         return address_out[0]
     else:
         return address_out
+
+if __name__ == '__main__':
+    def back_and_forth(addr, family, i):
+        print("converting {!r}".format(addr))
+        x = addr2int(addr)
+        if (x != i):
+            print("There's an error")
+        print("addr2int() = {!r}".format(x))
+        y = int2addr(x, family)
+        if (y != addr):
+            print("There's an error")
+        print("int2ddr() = {!r}".format(y))
+
+    back_and_forth('2001:4900:1:213::1000:0:43', 'INET6',
+                   42541968777878128053532039935776784451L)
+    back_and_forth('192.168.56.102', 'INET', 3232249958)
+    back_and_forth('::ffff:192.168.56.102', 'INET6', 281473913993318)
