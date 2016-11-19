@@ -19,6 +19,12 @@ class TestNetworkMethods(unittest.TestCase):
         assert int2addr(42540766480198310862439499904952827905L,
                         'INET6') == '2001:DB8:DEAD:BEEF::1'.lower()
 
+    def test_addr2int_v6_embedded(self):
+        assert addr2int('::ffff:192.168.56.102') == 281473913993318
+
+    def test_int2addr_v6_embedded(self):
+        assert int2addr(281473913993318, 'INET6') == '::ffff:192.168.56.102'
+
     def test_addr2net_str_v4(self):
         assert addr2net('192.0.2.190', 28) == '192.0.2.176/28'
 
