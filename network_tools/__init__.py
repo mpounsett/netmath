@@ -50,7 +50,7 @@ def addr2int(address):
         if (family == 'INET6' and '.' in parts[i] and address >> 48 == 0):
             part = addr2int(parts[i])
         else:
-            part = int(parts[i], base) << (bits * (size / bits - i - 1))
+            part = int(parts[i], base) << int(bits * (size / bits - i - 1))
 
         address += part
     return address
