@@ -1,5 +1,6 @@
 import unittest
-from network import addr2int, int2addr, addr2net
+import os
+import sys
 
 
 class TestNetworkMethods(unittest.TestCase):
@@ -12,11 +13,11 @@ class TestNetworkMethods(unittest.TestCase):
 
     def test_addr2int_v6(self):
         self.assertEqual(addr2int('2001:DB8:DEAD:BEEF::1'),
-                         42540766480198310862439499904952827905L)
+                         42540766480198310862439499904952827905)
 
     def test_int2addr_v6(self):
         self.assertEqual(
-            int2addr(42540766480198310862439499904952827905L, 'INET6'),
+            int2addr(42540766480198310862439499904952827905, 'INET6'),
             '2001:DB8:DEAD:BEEF::1'.lower()
         )
 
@@ -84,4 +85,10 @@ class TestNetworkMethods(unittest.TestCase):
         )
 
 if __name__ == '__main__':
+
+    path = os.path.abspath('build/lib/')
+    sys.path.insert(0, path)
+
+    from network_tools import addr2int, int2addr, addr2net
+
     unittest.main()
