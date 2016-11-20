@@ -158,20 +158,3 @@ def addr2net(address, bits=0):
         return address_out[0]
     else:
         return address_out
-
-if __name__ == '__main__':
-    def back_and_forth(addr, family, i):
-        print("converting {!r}".format(addr))
-        x = addr2int(addr)
-        if (x != i):
-            print("There's an error")
-        print("addr2int() = {!r}".format(x))
-        y = int2addr(x, family)
-        if (y != addr):
-            print("There's an error")
-        print("int2ddr() = {!r}".format(y))
-
-    back_and_forth('2001:4900:1:213::1000:0:43', 'INET6',
-                   42541968777878128053532039935776784451L)
-    back_and_forth('192.168.56.102', 'INET', 3232249958)
-    back_and_forth('::ffff:192.168.56.102', 'INET6', 281473913993318)
