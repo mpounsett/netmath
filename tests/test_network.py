@@ -1,6 +1,15 @@
-import unittest
+# -*- coding: utf-8 -*-
+# ------------------------------------------------------------
+# Copyright 2014, Matthew Pounsett <matt@conundrum.com>
+# ------------------------------------------------------------
 import os
 import sys
+import unittest
+
+sys.path.insert(0,
+                os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+                )
+from netmath import addr2int, int2addr, addr2net
 
 
 class TestNetworkMethods(unittest.TestCase):
@@ -83,12 +92,3 @@ class TestNetworkMethods(unittest.TestCase):
              '2001:db8:bad:dad::0/64',
              '192.0.2.248/29']
         )
-
-if __name__ == '__main__':
-
-    path = os.path.abspath('build/lib/')
-    sys.path.insert(0, path)
-
-    from network_tools import addr2int, int2addr, addr2net
-
-    unittest.main()

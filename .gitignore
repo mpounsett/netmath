@@ -1,2 +1,6 @@
 *.pyc
+*.pyo
 build/
+.tox
+*.egg
+*.egg-info
