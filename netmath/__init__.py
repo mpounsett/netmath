@@ -2,10 +2,19 @@
 # ------------------------------------------------------------
 # Copyright 2014, Matthew Pounsett <matt@conundrum.com>
 # ------------------------------------------------------------
+"""
+A native python module for doing common network math operations.  Current
+supports conversion of IPv4 and IPv6 literals to CIDR-style notation and back,
+as well as conversion to integers for easy sorting.
+"""
+
 import re
 
 
 def addr2int(address):
+    """
+    Converts an IPv4 or IPv6 address to its integer form.
+    """
     if ":" in address:
         family = 'INET6'
         size = 128
@@ -26,14 +35,14 @@ def addr2int(address):
             segments = 7
 
         # Replace any :: with enough zeros to pad the address to 8 octets
-        for i in range(len(parts)):
+        for (i, _) in enumerate(parts):
             if parts[i] == '':
                 parts[i] = '0'
-                for x in range(segments - len(parts)):
+                for _ in range(segments - len(parts)):
                     parts.insert(i, '0')
 
         # fill any empty fields still remaining with zeros.
-        for i in range(len(parts)):
+        for (i, _) in enumerate(parts):
             if parts[i] == '':
                 parts[i] = '0'
 
@@ -49,18 +58,22 @@ def addr2int(address):
         separator = '.'
 
     parts = address.split(separator)
-    address = 0
-    for i in range(len(parts)):
-        if (family == 'INET6' and '.' in parts[i] and address >> 48 == 0):
+    new_address = 0
+    for (i, _) in enumerate(parts):
+        if family == 'INET6' and '.' in parts[i] and new_address >> 48 == 0:
             part = addr2int(parts[i])
         else:
             part = int(parts[i], base) << int(bits * (size / bits - i - 1))
 
-        address += part
-    return address
+        new_address += part
+    return new_address
 
 
 def int2addr(address, family):
+    """
+    Converts an IPv4 or IPv6 address from its integer form to a string
+    literal.
+    """
     # mapped = embedded = False
     embedded = False
     if family.upper() == 'INET6':
@@ -73,7 +86,7 @@ def int2addr(address, family):
         # No use for specially handling mapped addresses (yet)
         # if (address >> 32 == 0):
         #     mapped = True
-        if (address >> 48 == 0):
+        if address >> 48 == 0:
             embedded = True
 
     elif family.upper() == 'INET':
@@ -87,7 +100,7 @@ def int2addr(address, family):
     parts = []
     mask = (2 ** bits) - 1
     while size > 0:
-        if (embedded and size == 32):
+        if embedded and size == 32:
             parts.append(int2addr(address & ((2 ** 32) - 1), "INET"))
             size -= 32
         else:
@@ -121,8 +134,8 @@ def addr2net(address, bits=0):
     """
 
     address_out = []
-    input = type(address)
-    if input is str:
+    input_type = type(address)
+    if input_type is str:
         address = [address]
 
     for addr in address:
@@ -158,7 +171,7 @@ def addr2net(address, bits=0):
 
         address_out.append("{addr}/{mask}".format(addr=addr, mask=masklen))
 
-    if input is str:
+    if input_type is str:
         return address_out[0]
     else:
         return address_out
