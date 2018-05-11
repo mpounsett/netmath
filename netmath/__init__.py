@@ -2,7 +2,10 @@
 # ------------------------------------------------------------
 # Copyright 2014, Matthew Pounsett <matt@conundrum.com>
 # ------------------------------------------------------------
+
 """
+Network math helper module.
+
 A native python module for doing common network math operations.  Current
 supports conversion of IPv4 and IPv6 literals to CIDR-style notation and back,
 as well as conversion to integers for easy sorting.
@@ -12,9 +15,7 @@ import re
 
 
 def addr2int(address):
-    """
-    Converts an IPv4 or IPv6 address to its integer form.
-    """
+    """Convert an IPv4 or IPv6 address string literal into its integer form."""
     if ":" in address:
         family = 'INET6'
         size = 128
@@ -71,8 +72,10 @@ def addr2int(address):
 
 def int2addr(address, family):
     """
-    Converts an IPv4 or IPv6 address from its integer form to a string
-    literal.
+    Convert IP address from integer to its string literal form.
+
+    Accepts an integer and a network family ('INET' or 'INET6') and returns
+    the appropriate IPv4 or IPv6 string literal.
     """
     # mapped = embedded = False
     embedded = False
@@ -116,13 +119,14 @@ def int2addr(address, family):
 
 def addr2net(address, bits=0):
     """
-    Address is either a string or a list of strings.  addr2net() will
-    return the same data type that is passed to it.
+    Convert string literal address(es) to CIDR-notation.
 
-    Each address can be either a bare address or an address in CIDR
-    notation.  If an address is in CIDR notation then 'bits' is optional.
-    Where an address is in CIDR notation and 'bits' is specified, the mask
-    length on the address will be preferred.
+    Address is either a string or a list of strings.  Each address may be a
+    string literal address (undecorated) or a string literal address decorated
+    with a CIDR-notation mask length.  If no mask length decorates an address,
+    the 'bits' value will be used for its mask length.  Where an address is in
+    CIDR notation and 'bits' is specified, the mask length on the address will
+    be preferred.
 
     INET and INET6 families can be mixed in a list of addresses, however
     note that only one 'bits' can be provided, so it's likely you will want
@@ -131,8 +135,9 @@ def addr2net(address, bits=0):
 
     INET6 addresses may be enclosed in square brackets, a common notation
     to differentiate them from other data types.
-    """
 
+    addr2net() will return the same data type that is passed to it.
+    """
     address_out = []
     input_type = type(address)
     if input_type is str:
