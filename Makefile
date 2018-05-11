@@ -1,10 +1,15 @@
-python=python
+.PHONY: clean dist distclean
 
-build:
-	${python} setup.py build
+all: clean dist
 
-test: build
-	${python} test/network_tests.py
+clean:
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	rm -Rf build rndc.egg-info __pycache__
 
-install: test
-	${python} setup.py install
+distclean: clean
+	rm -Rf dist
+
+dist:
+	python setup.py bdist_wheel
+	python setup.py sdist
