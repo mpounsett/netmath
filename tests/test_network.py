@@ -9,7 +9,7 @@ import unittest
 sys.path.insert(0,
                 os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
                 )
-from netmath import addr2int, int2addr, addr2net
+from netmath import addr2int, int2addr, addr2net  # noqa: E402
 
 
 class TestNetworkMethods(unittest.TestCase):
