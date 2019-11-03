@@ -178,5 +178,5 @@ def addr2net(address, bits=0):
 
     if input_type is str:
         return address_out[0]
-    else:
-        return address_out
+
+    return address_out
