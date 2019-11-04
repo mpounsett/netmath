@@ -1,5 +1,8 @@
 """
+Netmath
+-------
 
+A native python library for doing network/subnetting math.
 """
 from distutils.util import convert_path
 from setuptools import setup, find_packages
@@ -20,7 +23,7 @@ with open(ver_path) as ver_file:
 setup(
     name="netmath",
     version=main_ns['__VERSION__'],
-    description="Network Tools",
+    description="Netmath",
     long_description=__doc__,
     keywords="network library",
 
@@ -39,7 +42,10 @@ setup(
         'Operating System :: Unix',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Software Development :: Libraries',
         'Topic :: System :: Networking',
     ],
