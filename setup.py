@@ -27,6 +27,8 @@ setup(
     author="Matthew Pounsett",
     author_email="matt@conundrum.com",
     license="Apache Software License 2.0",
+    url="https://github.com/mpounsett/netmath",
+    download_url="https://pypi.org/project/netmath/",
 
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
