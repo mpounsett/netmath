@@ -12,9 +12,10 @@ as well as conversion to integers for easy sorting.
 """
 
 import re
+from typing import List
 
 
-def addr2int(address):
+def addr2int(address: str) -> int:
     """Convert an IPv4 or IPv6 address string literal into its integer form."""
     if ":" in address:
         family = 'INET6'
@@ -58,7 +59,7 @@ def addr2int(address):
         base = 10
         separator = '.'
 
-    parts = address.split(separator)
+    parts: List[str] = address.split(separator)
     new_address = 0
     for (i, _) in enumerate(parts):
         if family == 'INET6' and '.' in parts[i] and new_address >> 48 == 0:
@@ -70,7 +71,7 @@ def addr2int(address):
     return new_address
 
 
-def int2addr(address, family):
+def int2addr(address: int, family: str) -> str:
     """
     Convert IP address from integer to its string literal form.
 
@@ -100,7 +101,7 @@ def int2addr(address, family):
     else:
         raise TypeError("Unknown address family {!r}.".format(family))
 
-    parts = []
+    parts: List[str] = []
     mask = (2 ** bits) - 1
     while size > 0:
         if embedded and size == 32:
@@ -109,7 +110,7 @@ def int2addr(address, family):
         else:
             parts.append(bit.format((address >> (size - bits)) & mask))
             size -= bits
-    addr = separator.join(parts)
+    addr: str = separator.join(parts)
 
     if family.upper() == 'INET6':
         addr = re.sub(r'(^0)?:0(:0)*:', '::', addr, 1)
@@ -117,7 +118,7 @@ def int2addr(address, family):
     return addr
 
 
-def addr2net(address, bits=0):
+def addr2net(address: str, bits: int = 0):
     """
     Convert string literal address(es) to CIDR-notation.
 
