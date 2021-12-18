@@ -99,7 +99,7 @@ def int2addr(address: int, family: str) -> str:
         size = 32
         separator = "."
     else:
-        raise TypeError("Unknown address family {!r}.".format(family))
+        raise TypeError(f"Unknown address family {family!r}.")
 
     parts: List[str] = []
     mask = (2 ** bits) - 1
@@ -173,9 +173,9 @@ def addr2net(address: str, bits: int = 0):
         addr = int2addr(addr_bits & mask, family)
 
         if wrapped:
-            addr = "[{addr}]".format(addr=addr)
+            addr = f"[{addr}]"
 
-        address_out.append("{addr}/{mask}".format(addr=addr, mask=masklen))
+        address_out.append(f"{addr}/{masklen}")
 
     if input_type is str:
         return address_out[0]
