@@ -9,86 +9,76 @@ import unittest
 sys.path.insert(0,
                 os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
                 )
-from netmath import addr2int, int2addr, addr2net  # noqa: E402
+from netmath import Address, AddressFamily # noqa
 
 
-class TestNetworkMethods(unittest.TestCase):
+class TestIPv4(unittest.TestCase):
+    def test_v4_default_mask(self):
+        x = Address('192.0.2.190')
+        self.assertEqual(x.address_int, 3221226174)
+        self.assertEqual(x.address, '192.0.2.190')
+        self.assertEqual(x.mask_length, 32)
+        self.assertEqual(x.to_network(), '192.0.2.190/32')
 
-    def test_addr2int_v4(self):
-        self.assertEqual(addr2int('192.0.2.190'), 3221226174)
+    def test_v4_string_mask(self):
+        x = Address('192.0.2.190/24')
+        self.assertEqual(x.address_int, 3221226174)
+        self.assertEqual(x.address, '192.0.2.190')
+        self.assertEqual(x.mask_length, 24)
+        self.assertEqual(x.to_network(), '192.0.2.0/24')
 
-    def test_int2addr_v4(self):
-        self.assertEqual(int2addr(3221226174, 'INET'), '192.0.2.190')
+    def test_v4_int_mask(self):
+        x = Address('192.0.2.190', 24)
+        self.assertEqual(x.address_int, 3221226174)
+        self.assertEqual(x.address, '192.0.2.190')
+        self.assertEqual(x.mask_length, 24)
+        self.assertEqual(x.to_network(), '192.0.2.0/24')
 
-    def test_addr2int_v6(self):
-        self.assertEqual(addr2int('2001:DB8:DEAD:BEEF::1'),
-                         42540766480198310862439499904952827905)
+    def test_v4_override_mask(self):
+        x = Address('192.0.2.190', 24)
+        self.assertEqual(x.to_network(mask_length=8), '192.0.0.0/8')
 
-    def test_int2addr_v6(self):
-        self.assertEqual(
-            int2addr(42540766480198310862439499904952827905, 'INET6'),
-            '2001:DB8:DEAD:BEEF::1'.lower()
-        )
 
-    def test_addr2int_v6_embedded(self):
-        self.assertEqual(addr2int('::ffff:192.168.56.102'), 281473913993318)
+class TestIPv6(unittest.TestCase):
+    def test_v6_default_mask(self):
+        x = Address('2001:DB8:DEAD:BEEF::1')
+        self.assertEqual(x.address_int, 42540766480198310862439499904952827905)
+        self.assertEqual(x.address, '2001:db8:dead:beef::1')
+        self.assertEqual(x.mask_length, 128)
+        self.assertEqual(x.to_network(), '2001:db8:dead:beef::1/128')
 
-    def test_int2addr_v6_embedded(self):
-        self.assertEqual(int2addr(281473913993318, 'INET6'),
-                         '::ffff:192.168.56.102')
+    def test_v6_string_mask(self):
+        x = Address('2001:DB8:DEAD:BEEF::1/64')
+        self.assertEqual(x.address_int, 42540766480198310862439499904952827905)
+        self.assertEqual(x.address, '2001:db8:dead:beef::1')
+        self.assertEqual(x.mask_length, 64)
+        self.assertEqual(x.to_network(), '2001:db8:dead:beef::0/64')
 
-    def test_addr2net_str_v4(self):
-        self.assertEqual(addr2net('192.0.2.190', 28), '192.0.2.176/28')
+    def test_v6_int_mask(self):
+        x = Address('2001:DB8:DEAD:BEEF::1', 64)
+        self.assertEqual(x.address_int, 42540766480198310862439499904952827905)
+        self.assertEqual(x.address, '2001:db8:dead:beef::1')
+        self.assertEqual(x.mask_length, 64)
+        self.assertEqual(x.to_network(), '2001:db8:dead:beef::0/64')
 
-    def test_addr2net_str_v4_cidr(self):
-        self.assertEqual(addr2net('192.0.2.190/28'), '192.0.2.176/28')
+    def test_v6_override_mask(self):
+        x = Address('2001:DB8:DEAD:BEEF::1', 64)
+        self.assertEqual(x.to_network(mask_length=48), '2001:db8:dead::0/48')
 
-    def test_addr2net_str_v6(self):
-        self.assertEqual(addr2net('2001:DB8:DEAD:BEEF::1', 48),
-                         '2001:db8:dead::0/48')
+    def test_v6_tidy(self):
+        x = Address('[2001:DB8:DEAD:BEEF:0:0::1]')
+        self.assertEqual(x.address_int, 42540766480198310862439499904952827905)
+        self.assertEqual(x.address, '2001:db8:dead:beef::1')
+        self.assertEqual(x.mask_length, 128)
+        self.assertEqual(x.to_network(), '2001:db8:dead:beef::1/128')
 
-    def test_addr2net_str_v6_cidr(self):
-        self.assertEqual(addr2net('2001:DB8:DEAD:BEEF::1/48'),
-                         '2001:db8:dead::0/48')
+    def test_v6_embedded(self):
+        x = Address('::ffff:192.168.56.102')
+        self.assertEqual(x.address_int, 281473913993318)
+        self.assertEqual(x.address, '::ffff:192.168.56.102')
+        self.assertEqual(x.mask_length, 128)
+        self.assertEqual(x.to_network(), '::ffff:192.168.56.102/128')
 
-    def test_addr2net_str_v6_wrapped(self):
-        self.assertEqual(addr2net('[2001:DB8:DEAD:BEEF::1]', 48),
-                         '[2001:db8:dead::0]/48')
-
-    def test_addr2net_str_v6_wrapped_cidr(self):
-        self.assertEqual(addr2net('[2001:DB8:DEAD:BEEF::1]/48'),
-                         '[2001:db8:dead::0]/48')
-
-    def test_addr2net_v4_list(self):
-        self.assertEqual(addr2net(['192.0.2.190', '192.0.2.250'], 28),
-                         ['192.0.2.176/28', '192.0.2.240/28'])
-
-    def test_addr2net_v4_list_cidr(self):
-        self.assertEqual(addr2net(['192.0.2.190/28', '192.0.2.250/29']),
-                         ['192.0.2.176/28', '192.0.2.248/29'])
-
-    def test_addr2net_str_v6_list(self):
-        self.assertEqual(
-            addr2net(['2001:DB8:DEAD:BEEF::1', '2001:DB8:BAD:DAD::9'], 48),
-            ['2001:db8:dead::0/48', '2001:db8:bad::0/48']
-        )
-
-    def test_addr2net_str_v6_list_cidr(self):
-        self.assertEqual(
-            addr2net(['2001:DB8:DEAD:BEEF::1/48', '2001:DB8:BAD:DAD::9/64']),
-            ['2001:db8:dead::0/48', '2001:db8:bad:dad::0/64']
-        )
-
-    def test_addr2net_mixed(self):
-        self.assertEqual(
-            addr2net(['192.0.2.190/28',
-                      '192.0.2.10',
-                      '[2001:DB8:DEAD:BEEF::1]/48',
-                      '2001:DB8:BAD:DAD::9/64',
-                      '192.0.2.250/29']),
-            ['192.0.2.176/28',
-             '192.0.2.10',
-             '[2001:db8:dead::0]/48',
-             '2001:db8:bad:dad::0/64',
-             '192.0.2.248/29']
-        )
+    def test_v6_malformed(self):
+        with self.assertRaises(ValueError):
+            Address('2001:DB8:DEAD:BEEF:0:0:0::1')

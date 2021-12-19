@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ------------------------------------------------------------
-# Copyright 2014, Matthew Pounsett <matt@conundrum.com>
+# Copyright 2014-2021, Matthew Pounsett <matt@conundrum.com>
 # ------------------------------------------------------------
 
 """
@@ -10,174 +10,180 @@ A native python module for doing common network math operations.  Current
 supports conversion of IPv4 and IPv6 literals to CIDR-style notation and back,
 as well as conversion to integers for easy sorting.
 """
-
+import enum
 import re
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 
-def addr2int(address: str) -> int:
-    """Convert an IPv4 or IPv6 address string literal into its integer form."""
-    if ":" in address:
-        family = 'INET6'
-        size = 128
-        bits = 16
-        base = 16
-        separator = ":"
+class AddressFamily(enum.Enum):
+    """ENUM type for address family."""
 
-        # If the address starts with :: then split will break.  Prepend a
-        # 0 to the string.
-        if address.startswith("::"):
+    INET = enum.auto()
+    INET6 = enum.auto()
+
+
+@dataclass(order=True, frozen=True)
+class Address:
+    """An object representing an IP address."""
+
+    address_int: int = field(init=False, repr=False)
+    address: str = field(compare=False)
+    mask_length: Optional[int] = field(default=None)
+    family: AddressFamily = field(init=False, compare=False)
+
+    def __post_init__(self) -> None:
+        """
+        Do post-init setup of the object.
+
+        This calculates the integer representation of the address,
+        then recomputes the string representation in order to standardize
+        format.  Mask_length defaults to all-ones if it is not specified.
+        """
+        object.__setattr__(self, 'family', self._detect_family(self.address))
+        if '/' in self.address:
+            address, mask_length = self.address.split('/')
+            object.__setattr__(self, 'address', address)
+            object.__setattr__(self, 'mask_length', int(mask_length))
+
+        object.__setattr__(self, 'address_int',
+                           self._address_to_int(self.address))
+        object.__setattr__(self, 'address',
+                           self._int_to_address(self.address_int, self.family))
+
+        if self.mask_length is None:
+            if self.family == AddressFamily.INET:
+                mask = 32
+            else:
+                mask = 128
+            object.__setattr__(self, 'mask_length', mask)
+
+    @staticmethod
+    def _detect_family(address: str) -> AddressFamily:
+        if ":" in address:
+            return AddressFamily.INET6
+        return AddressFamily.INET
+
+    @staticmethod
+    def _refactor_v6(address: str) -> str:
+        """Eliminate v6 syntax shortcuts."""
+        if address.startswith('['):
+            address = address.lstrip('[')
+            address = address.rstrip(']')
+        if address.startswith('::'):
             address = '0' + address
-        parts = address.split(separator)
 
-        # IPv4 embedded addresses have fewer octets in their text
-        # representation
+        parts: List[str] = address.split(":")
+
+        # IPv4 embedded addresses occupy both of the last two octets of the
+        # v6 address they're contained in, so the v6 address has fewer segments
         segments = 8
-        if "." in parts[-1]:
+        if '.' in parts[-1]:
             segments = 7
+
+        if len(parts) > segments:
+            raise ValueError("IPv6 address has too many octets.")
 
         # Replace any :: with enough zeros to pad the address to 8 octets
         for (i, _) in enumerate(parts):
             if parts[i] == '':
-                parts[i] = '0'
                 for _ in range(segments - len(parts)):
                     parts.insert(i, '0')
 
         # fill any empty fields still remaining with zeros.
-        for (i, _) in enumerate(parts):
-            if parts[i] == '':
-                parts[i] = '0'
+        parts = ['0' if x == '' else x for x in parts]
 
-        # put it back together so our generic code can deal with the
-        # expanded shortcuts
-        address = separator.join(parts)
+        return ":".join(parts)
 
-    else:
-        family = 'INET'
-        size = 32
-        bits = 8
-        base = 10
-        separator = '.'
-
-    parts: List[str] = address.split(separator)
-    new_address = 0
-    for (i, _) in enumerate(parts):
-        if family == 'INET6' and '.' in parts[i] and new_address >> 48 == 0:
-            part = addr2int(parts[i])
-        else:
-            part = int(parts[i], base) << int(bits * (size / bits - i - 1))
-
-        new_address += part
-    return new_address
-
-
-def int2addr(address: int, family: str) -> str:
-    """
-    Convert IP address from integer to its string literal form.
-
-    Accepts an integer and a network family ('INET' or 'INET6') and returns
-    the appropriate IPv4 or IPv6 string literal.
-    """
-    # mapped = embedded = False
-    embedded = False
-    if family.upper() == 'INET6':
-        bit = "{:x}"
-        bits = 16
-        size = 128
-        separator = ":"
-
-        # Check if this is a v4/v6 embedded or mapped address
-        # No use for specially handling mapped addresses (yet)
-        # if (address >> 32 == 0):
-        #     mapped = True
-        if address >> 48 == 0:
-            embedded = True
-
-    elif family.upper() == 'INET':
-        bit = "{:d}"
-        bits = 8
-        size = 32
-        separator = "."
-    else:
-        raise TypeError(f"Unknown address family {family!r}.")
-
-    parts: List[str] = []
-    mask = (2 ** bits) - 1
-    while size > 0:
-        if embedded and size == 32:
-            parts.append(int2addr(address & ((2 ** 32) - 1), "INET"))
-            size -= 32
-        else:
-            parts.append(bit.format((address >> (size - bits)) & mask))
-            size -= bits
-    addr: str = separator.join(parts)
-
-    if family.upper() == 'INET6':
-        addr = re.sub(r'(^0)?:0(:0)*:', '::', addr, 1)
-
-    return addr
-
-
-def addr2net(address: str, bits: int = 0):
-    """
-    Convert string literal address(es) to CIDR-notation.
-
-    Address is either a string or a list of strings.  Each address may be a
-    string literal address (undecorated) or a string literal address decorated
-    with a CIDR-notation mask length.  If no mask length decorates an address,
-    the 'bits' value will be used for its mask length.  Where an address is in
-    CIDR notation and 'bits' is specified, the mask length on the address will
-    be preferred.
-
-    INET and INET6 families can be mixed in a list of addresses, however
-    note that only one 'bits' can be provided, so it's likely you will want
-    to specify addresses in CIDR notation in order to mix address
-    families.
-
-    INET6 addresses may be enclosed in square brackets, a common notation
-    to differentiate them from other data types.
-
-    addr2net() will return the same data type that is passed to it.
-    """
-    address_out = []
-    input_type = type(address)
-    if input_type is str:
-        address = [address]
-
-    for addr in address:
-        if "/" in addr:
-            addr, masklen = addr.split("/")
-            masklen = int(masklen)
-        else:
-            masklen = bits
-        if masklen == 0:
-            address_out.append(addr)
-            continue
-
-        if ":" in addr:
-            family = 'INET6'
-            size = 128
-        else:
-            family = 'INET'
+    def _address_to_int(self, address: str) -> int:
+        """Convert an IP address string representation into an integer."""
+        family = self._detect_family(address)
+        if family == AddressFamily.INET:
             size = 32
-
-        if addr.startswith("["):
-            wrapped = True
-            addr = addr.lstrip('[')
-            addr = addr.rstrip(']')
+            bits = 8
+            base = 10
+            separator = '.'
         else:
-            wrapped = False
+            size = 128
+            bits = 16
+            base = 16
+            separator = ':'
+            address = self._refactor_v6(address)
 
-        addr_bits = addr2int(addr)
-        mask = (2 ** masklen - 1) << (size - masklen)
-        addr = int2addr(addr_bits & mask, family)
+        parts: List[str] = address.split(separator)
+        address_int = 0
+        for (i, _) in enumerate(parts):
+            if (family == AddressFamily.INET6 and
+                    '.' in parts[i] and
+                    address_int >> 48 == 0):
+                part = self._address_to_int(parts[i])
+            else:
+                part = int(parts[i], base) << int(bits * (size / bits - i - 1))
 
-        if wrapped:
-            addr = f"[{addr}]"
+            address_int += part
+        return address_int
 
-        address_out.append(f"{addr}/{masklen}")
+    def _int_to_address(self, address: int, family: AddressFamily) -> str:
+        """
+        Convert an integer representation of an IP address to its string form.
 
-    if input_type is str:
-        return address_out[0]
+        Accepts an integer and a network family of type AddressFamily,
+        and returns the appropriate IPv4 or IPv6 string representation.
+        """
+        embedded = False
+        if family == AddressFamily.INET6:
+            bit = "{:x}"
+            bits = 16
+            size = 128
+            separator = ":"
 
-    return address_out
+            if address >> 48 == 0:
+                embedded = True
+        else:
+            bit = "{:d}"
+            bits = 8
+            size = 32
+            separator = "."
+
+        parts: List[str] = []
+
+        mask = (2 ** bits) - 1
+        while size > 0:
+            if embedded and size == 32:
+                parts.append(self._int_to_address(address & (2 ** 32) - 1,
+                             AddressFamily.INET))
+                size -= 32
+            else:
+                parts.append(bit.format((address >> (size - bits)) & mask))
+                size -= bits
+        address_str = separator.join(parts)
+
+        if family == AddressFamily.INET6:
+            address_str = re.sub(r'(^0)?:0(:0)*:', '::', address_str, 1)
+
+        return address_str
+
+    def to_network(self, mask_length=None) -> str:
+        """
+        Return the covering network in CIDR notation.
+
+        Will return a string describing the covering network, in CIDR
+        notation.  If unspecified, the object's default mask_length will be
+        used.
+
+        >>> x = Address("192.0.2.9/24")
+        >>> x.to_network()
+        '192.0.2.0/24'
+        >>> x.to_network(mask_length=8)
+        '192.0.0.0/8'
+        """
+        if self.family == AddressFamily.INET:
+            size = 32
+        else:
+            size = 128
+
+        mask_length = (mask_length if mask_length is not None
+                       else self.mask_length)
+        mask = (2 ** mask_length - 1) << (size - mask_length)
+        address = self._int_to_address(self.address_int & mask, self.family)
+        return f"{address}/{mask_length}"
