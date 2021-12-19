@@ -5,4 +5,4 @@
 
 """Version module for netmath."""
 
-__VERSION__ = "1.0.2"
+__VERSION__ = "2.0.0"
